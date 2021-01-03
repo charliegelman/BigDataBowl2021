@@ -33,5 +33,6 @@ if(bearer_auth$status_code == 401){
   
   saveRDS(pff_man_coverage, "data/pff_press_man_plays.RDS")
   rm(pbp2018)
+  rm(pff_man_coverage)
 }
 
