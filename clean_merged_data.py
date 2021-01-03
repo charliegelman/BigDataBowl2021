@@ -83,6 +83,21 @@ def main():
     df = pd.read_csv('data/merged_data.csv')
     clean_df = pd.concat([make_press_player_rows(row) for index, row in df.iterrows()], sort=False)
     clean_df = clean_df.sort_values(by = 'week')
+    '''
+    Route counts:
+    Go            2824
+    Deep Out      1650
+    Hitch/Curl    1466
+    Mesh          1312
+    Dig/Indy      1104
+    Slant         1051
+    Post           827
+    Corner         453
+    Block          387
+    Comeback       212
+    Now            163
+    HB Screen        1
+    '''
     clean_df.to_csv('data/cleaned_data.csv')
 
 if __name__ == '__main__':
