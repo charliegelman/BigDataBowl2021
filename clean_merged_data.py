@@ -99,6 +99,8 @@ def main():
     HB Screen        1
     '''
     clean_df.to_csv('data/cleaned_data.csv')
+    clean_vert_df = clean_df.loc[(clean_df['route_name'] == 'Go') | (clean_df['route_name'] == 'Hitch/Curl') | (clean_df['route_name'] == 'Comeback')]
+    clean_vert_df.to_csv('data/cleaned_vertical_route_data.csv')
 
 if __name__ == '__main__':
     main()
