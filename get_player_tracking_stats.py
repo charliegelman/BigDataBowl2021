@@ -3,7 +3,7 @@ import math
 
 clean_vert_df = pd.read_csv('data/cleaned_vertical_route_data.csv')
 
-def get_play_data(row, week_data, play_index):
+def get_play_data(row, week_data, play_index, imputed = False):
     if play_index % 20 == 0: # print every 20 plays
         print(f'Index: {play_index}')
 
@@ -37,8 +37,14 @@ def get_play_data(row, week_data, play_index):
 
     snapped = False
     if math.isnan(los):
-        print(f'nan abs yardline at index {play_index}')
-    elif play_data['route_name'] == 'Go':
+        if imputed:
+            print(f'nan abs yardline at index {play_index} - using WR loc')
+            los = receiver_tracking_data.iloc[0]['x']
+        else:
+            print(f'nan abs yardline at index {play_index}')
+            temp_df = temp_df.append(play_data, ignore_index=True)
+            return temp_df
+    if play_data['route_name'] == 'Go':
         for index, track_row in receiver_tracking_data.iterrows():
             if snapped:
                 if track_row['event'] in ["pass_forward", "pass_arrived", "pass_outcome_caught", "pass_outcome_incomplete", "first_contact", "tackle", "qb_sack",  "pass_tipped", "pass_outcome_interception", "qb_strip_sack", "pass_shovel", "touchdown", "pass_outcome_touchdown"] \
@@ -116,20 +122,24 @@ def get_play_data(row, week_data, play_index):
     temp_df = temp_df.append(play_data, ignore_index=True)
     return temp_df
 
-def get_week_data(week):
+def get_week_data(week, imputed = False):
     week_data = pd.read_csv(f'data/week{week}.csv')
     week_play_data = clean_vert_df.loc[clean_vert_df['week'] == week]
     print(f'{len(week_play_data)} plays')
-    week_df = pd.concat([get_play_data(row, week_data, index) for index, row in week_play_data.iterrows()], sort=False)
+    week_df = pd.concat([get_play_data(row, week_data, index, imputed = imputed) for index, row in week_play_data.iterrows()], sort=False)
     return week_df
 
 def main():
+    want_imputed = True
     fin_df = pd.DataFrame()
     for week in range(1, 18):
         print(f'Week {week}:')
-        week_df = get_week_data(week)
+        week_df = get_week_data(week, imputed = want_imputed)
         fin_df = fin_df.append(week_df, sort=False)
-        fin_df.to_csv('data/final_data.csv')
+        if want_imputed:
+            fin_df.to_csv('data/final_data_imputed.csv')
+        else:
+            fin_df.to_csv('data/final_data.csv')
     print('we did it fam')
 
 if __name__ == '__main__':
