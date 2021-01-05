@@ -90,6 +90,9 @@ get_hip_reac <- function(row){
 good_hip_reac <- get_hip_reac(hip_reacs[4,])
 
 bad_hip_reac <- get_hip_reac(hip_reacs[33,])
+
+write.csv(good_hip_reac, 'data/good_hip_react_dots.csv')
+write.csv(bad_hip_reac, 'data/bad_hip_react_dots.csv')
 ```
 
 ```{r}
@@ -129,6 +132,11 @@ vert_reacs <- final_data %>%
 good_vert_reac <- get_hip_reac(vert_reacs[4,])
 
 bad_vert_reac <- get_hip_reac(vert_reacs[18,])
+write.csv(good_vert_reac, 'data/good_vert_react_dots.csv')
+write.csv(bad_vert_reac, 'data/bad_vert_react_dots.csv')
+```
+
+```{r}
 ggplot(bad_vert_reac, aes(y = x, x = y, label = jerseyNumber))+
   geom_point(aes(shape = position, fill = displayName), size = 5, alpha = 0.7, colour = "black")+
     scale_shape_manual(values=c("CB" = 21, "WR" = 22))
