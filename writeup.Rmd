@@ -1,0 +1,124 @@
+---
+title: "Hip Reaction Drill"
+subtitle: "Measuring Reactions of Cornerbacks in Press-Man against Vertical-Breaking Routes"
+author: "Charlie Gelman"
+date: "January 7, 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(dplyr)
+library(ggplot2)
+```
+
+# Introduction
+
+Two of the most valuable traits of a cornerback are his hips and his ability to react to the receivers' hips. At Duke Football, we play a lot of press-man coverage, 
+
+
+
+```{r}
+final_data <- read.csv("data/final_data_imputed.csv")
+```
+
+
+```{r}
+summed_data <- final_data %>%
+  group_by(defender_name) %>%
+  summarise(count = n(), avg_downfield_distance = mean(downfield_distance, na.rm = TRUE), avg_hip_reaction_time = mean(hip_reaction_time, na.rm = TRUE), num_verts = sum(route_name == "Go")) %>%
+  mutate(num_break_routes = count - num_verts)
+
+
+# todo: count of each type of route
+```
+
+```{r}
+summed_data %>%
+  filter(num_break_routes >= 15) %>%
+  arrange(avg_hip_reaction_time) %>%
+  head(15) %>%
+  ggplot(aes(y = reorder(defender_name, -avg_hip_reaction_time), x = avg_hip_reaction_time))+
+  geom_col()
+
+summed_data %>%
+  filter(num_verts >= 15) %>%
+  arrange(desc(avg_downfield_distance)) %>%
+  head(15) %>%
+  ggplot(aes(y = reorder(defender_name, avg_downfield_distance), x = avg_downfield_distance))+
+  geom_col()
+```
+
+```{r}
+final_data %>%
+  filter(!is.na(hip_reaction_time)) %>%
+  filter(!is.na(separation)) %>%
+  ggplot(aes(x = hip_reaction_time, y = separation))+
+  geom_point()+
+  geom_smooth(method = "lm")+
+  xlim(0,1)+
+  ylim(0,5)
+```
+
+```{r}
+# good_hip_reac <- read.csv('data/week13.csv') %>%
+#   filter(gameId == 2018120206) %>%
+#   filter(playId == 3362) %>%
+#   filter((displayName == "Kenny Stills") | (displayName == "Rafael Bush"))  
+
+# good_hip_reac <- read.csv('data/week14.csv') %>%
+#   filter(gameId == 	2018120912) %>%
+#   filter(playId == 	3594) %>%
+#   filter((displayName == "Alshon Jeffery") | (displayName == "Chidobe Awuzie"))  
+hip_reacs <- final_data %>%
+    filter(!is.na(hip_reaction_time)) %>%
+    filter(route_name == "Hitch/Curl") %>%
+    filter(route_depth > 5) %>%
+    filter(route_depth < 6) %>%
+    filter(typeDropback == "TRADITIONAL") %>%
+    filter(targeted == 1) %>%
+    arrange(hip_reaction_time)
+
+
+get_hip_reac <- function(row){
+  read.csv(sprintf('data/week%d.csv', row[['week']])) %>%
+    filter(gameId == 	row[['gameId']]) %>%
+    filter(playId == 	row[['playId']]) %>%
+    filter((displayName == row[['receiver_name']]) | (displayName == row[['defender_name']])) 
+}
+
+good_hip_reac <- get_hip_reac(hip_reacs[4,])
+
+bad_hip_reac <- get_hip_reac(hip_reacs[33,])
+```
+
+```{r}
+ggplot(bad_hip_reac, aes(y = 113 - x, x = y, label = jerseyNumber))+
+    annotate("text", x = 21, 
+           y = 52:68, label = "____", hjust = 1, vjust = -0.2) + 
+    geom_hline(yintercept = seq(51,66,5), color = "black")+
+    geom_hline(yintercept = 66, color = "blue", size = 2)+
+    geom_hline(yintercept = 56, color = "yellow", size = 2)+
+  geom_point(aes(shape = position, fill = displayName), size = 5, alpha = 0.7, colour = "black") +
+    geom_point(data = good_hip_reac, aes(y = x, x = y - 20, shape = position, fill = displayName), colour="black", size = 5, alpha = 0.7)+
+    scale_shape_manual(values=c("CB" = 21, "WR" = 22))+
+    scale_fill_manual(values = c("red", "purple", "green", "blue"))+
+    guides(fill = guide_legend(override.aes=list(shape=21)))+
+    geom_text(colour = "white", size = 3.5)+
+    geom_text(data = good_hip_reac, aes(y = x, x = y - 20), colour = "white", size = 3.5)+
+    annotate("text", x = 15, y = 67.75, label = "Hip Reaction: 0.4s")+
+    annotate("text", x = 27, y = 67.75, label = "Hip Reaction: 0.1s")+
+    coord_fixed() +  
+    theme_nothing()+
+    labs(fill = "Player")+
+    theme(legend.position = "right")+
+    transition_states(frameId)
+
+anim_save("figures/good_bad_hip_reactions.gif")
+```
+
+
+PlayId 1489 (pass to Bennie Fowler is marked as a curl/hitch)
