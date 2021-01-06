@@ -108,11 +108,11 @@ We see players like Marlon Humphrey, J.C. Jackson, and Tre’Davious White in bo
 
 # Discussion
 
-In this study, we quantified the results of the cornerback drill. It should be noted that this may not be the best way of assessing cornerback play throughout all techniques, as this may struggle with cornerbacks that play motor technique. It would also be interesting to explore how a cornerback’s hip reaction affects their ability to cover stutter-and-go or whip routes.
+In this study, we quantified the results of the Hip Reaction drill. It should be noted that there are extensions to this study in terms of assessing cornerback play throughout all techniques, as we may find unique conclusions when assessing hip reactions in cornerbacks that play motor technique. It would also be interesting to explore how a cornerback’s hip reaction affects their ability to cover stutter-and-go or whip routes. With more access to film, these could certainly be studied.
 
 It should also be noted that the data can at times be unreliable. While the data was mostly clean, there were plays such as GSIS play 2852 of the Week 17 game between the Jets and Patriots, where Robby Anderson only has two frames of data.
 
-However, this is a relevant study for NFL teams, as not only does this provide numbers to assess a defender’s traits and to justify a specific practice drill, it opens the door to trying to quantify other drills’ translation to the game.
+Still, this is a relevant study for NFL teams, as not only does this provide numbers to assess a defender’s traits and to justify a specific practice drill, it opens the door to trying to quantify other drills’ translation to the game.
 
 # References
 
