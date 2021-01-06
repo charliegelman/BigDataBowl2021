@@ -1,3 +1,9 @@
+library(cowplot)
+library(dplyr)
+library(gganimate)
+library(ggplot2)
+library(patchwork)
+
 final_data <- read.csv("data/final_data_imputed.csv")
 
 summed_data <- final_data %>%
@@ -10,25 +16,37 @@ summed_data %>%
   arrange(avg_hip_reaction_time) %>%
   head(15) %>%
   ggplot(aes(y = reorder(defender_name, -avg_hip_reaction_time), x = avg_hip_reaction_time))+
-  geom_col()
+  geom_col(fill = "#00009c", color = "black")+
+  theme_cowplot()+
+  labs(x = "Avg. Hip Reaction Time (sec)", y = "Defender Name", 
+       title = "Top Defenders by Hip Reaction Time",
+       subtitle = "2018 NFL Regular Season\nMinimum 15 snaps in press-man against a curl/hitch/comeback")
+ggsave("figures/hip_reaction_rankings.png", width = 8, height = 4)
 
 summed_data %>%
   filter(num_verts >= 15) %>%
   arrange(desc(avg_downfield_distance)) %>%
   head(15) %>%
   ggplot(aes(y = reorder(defender_name, avg_downfield_distance), x = avg_downfield_distance))+
-  geom_col()
+  geom_col(fill = "#00009c", color = "black")+
+  theme_cowplot()+
+  labs(x = "Avg. Downfield Distance (yards)", y = "Defender Name", 
+       title = "Top Defenders by Downfield Distance",
+       subtitle = "2018 NFL Regular Season\nMinimum 15 snaps in press-man against a vertical")
+ggsave("figures/vert_reaction_rankings.png", width = 8, height = 4)
 
-final_data %>%
+hip_vs_sep_plot <- final_data %>%
   filter(!is.na(hip_reaction_time)) %>%
   filter(!is.na(separation)) %>%
   ggplot(aes(x = hip_reaction_time, y = separation))+
   geom_point()+
-  geom_smooth(method = "lm")+
+  geom_smooth()+
   xlim(0,1)+
-  ylim(0,5)
+  ylim(0,5)+
+  theme_cowplot()+
+  labs(x = "Hip Reaction Time (sec)", y = "Separation (yards)", title = "Separation at the Catch Point vs. Hip Reaction Measurements")
 
-final_data %>%
+vert_vs_sep_plot <- final_data %>%
   filter(!is.na(downfield_distance)) %>%
   filter(!is.na(separation)) %>%
   filter(separation < 30) %>%
@@ -36,7 +54,11 @@ final_data %>%
   geom_point()+
   geom_smooth()+
   xlim(-5,5)+
-  theme_cowplot()
+  theme_cowplot()+
+  labs(x = "Downfield Distance (yards)", y = "Separation (yards)")
+
+hip_vs_sep_plot + vert_vs_sep_plot
+ggsave("figures/separation_plots.png", width = 8, height = 4)
 
 
 hip_reacs <- final_data %>%
@@ -74,8 +96,9 @@ ggplot(bad_hip_reac, aes(x = frameId/10, y = s, color = displayName))+
            label = "Hip Reaction - 0.6s")+
   scale_color_manual(values = c("purple", "green"))+
   labs(x = "Time (sec)", y = "Speed (yards/sec)", 
-       title = "Speed of players during a curl versus press-man coverage", 
-       color = "Player")+
+       title = "Speed of Players during a Curl versus Press-Man Coverage", 
+       color = "Player",
+       subtitle = "GSIS play 98 of the 2018 Week 15 game between the Panthers and Saints\nEli Apple's hip reaction time indicated")+
   theme_cowplot()
 ggsave("figures/hip_reaction_plot.png", width = 8, height = 4)
 
@@ -97,8 +120,9 @@ ggplot(bad_hip_reac, aes(y = 113 - x, x = y, label = jerseyNumber))+
   annotate("text", x = 27, y = 67.75, label = "Hip Reaction: 0.1s")+
   coord_fixed() +  
   theme_nothing()+
-  labs(fill = "Player", shape = "Position")+
-  theme(legend.position = "right")+
+  labs(fill = "Player", shape = "Position",
+       caption = "Plot of hip reactions by Eli Apple (green) and Tramaine Brock (blue)\nagainst D.J. Moore (purple) and Christian Kirk (red), respectively.\nLeft Play: GSIS play 98, Week 15, Panthers vs. Saints\nRight Play: GSIS play 1324, Week 7, Broncos vs. Cardinals")+
+  theme(legend.position = "right", plot.caption.position = "plot", plot.caption = element_text(size=12))+
   transition_states(frameId)
 anim_save("figures/good_bad_hip_reactions.gif")
 
@@ -139,8 +163,9 @@ ggplot(bad_vert_reac, aes(y = x, x = y, label = jerseyNumber))+
   annotate("text", x = 34, y = 73.5, label = "Downfield Dist.: +0.11 yds")+
   coord_fixed() +  
   theme_nothing()+
-  labs(fill = "Player", shape = "Position")+
-  theme(legend.position = "right")+
+  labs(fill = "Player", shape = "Position",
+       caption = "Plot of downfield distances by Jaire Alexander (green) and Chandon Sullivan (blue)\nagainst Kelvin Benjamin (purple) and Russell Shepard (red), respectively\nLeft Play: GSIS play 1735, Week 4, Bills vs. Packers\nRight Play: GSIS play 1076, Week 12, Giants vs. Eagles")+
+  theme(legend.position = "right", plot.caption.position = "plot", plot.caption = element_text(size=12))+
   xlim(5, 40)+
   ylim(45,74)+
   transition_states(frameId)

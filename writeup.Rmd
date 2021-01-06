@@ -11,87 +11,113 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 ```
 
 ```{r libraries}
-library(cowplot)
-library(dplyr)
-library(gganimate)
-library(ggplot2)
 library(knitr)
 ```
 
 # Introduction
 
-Two of the most valuable traits of a cornerback are his hips and his ability to react to the receivers' hips. At Duke Football, we play a lot of press-man coverage, and so these traits become extremely important when you have to play in a receiver's face and quickly adjust to what routes they run. To train our cornerbacks (or "Cheetahs" as we call them), Coach Chris Hampton installed the Hip Reaction Drill.
+Two valuable traits of a cornerback are his hips and his ability to react to the receivers’ hips. At Duke Football, we play a lot of press-man coverage, and so these traits become extremely important when playing in a receiver’s face and quickly adjusting to their routes. To train this, Coach Chris Hampton installed the Hip Reaction Drill.
 
-In the Hip Reaction Drill, two players run next to each, with one acting as the wide receiver and the other being a cornerback. The wide receiver will run straight forward and at random times, drop his hips to slow down. There are two specific coaching points for the cornerback. The first coaching point is "when his hips drop, my hips drop." This is to say that when the receiver starts to slow down, his hips will drop, and so the cornerback should do the same in order to slow down as soon as possible. The other coaching point is "stay on top." This is to say that cornerbacks should be more upfield than the wide receiver, as we do not want our cornerbacks to get beat deep, as that's how explosive plays happen. An example of this drill can be seen below.
-
+In the Hip Reaction Drill, two players run next to each other: one acting as a wide receiver and the other being a cornerback. The wide receiver will run straight forward and at random times, drop his hips to slow down. There are two specific coaching points for the cornerback. The first coaching point is “when his hips drop, my hips drop.” This is to say that when the receiver starts to slow down, his hips will drop, and so the cornerback should do the same in order to slow down as soon as possible. The other coaching point is “stay on top.” This is to say that cornerbacks should be more upfield than the wide receiver, as we do not want our cornerbacks to get beat deep, as that’s how explosive plays happen. An example of this drill can be seen below.
 
 ```{r drill-trape, fig.align='center', fig.cap="An example of the Hip Reaction Drill, with #28 Mark Gilbert (green) acting as a cornerback and #31 Josh Blackwell (blue) acting as a wide receiver."}
 include_graphics("figures/hip_reaction_drill.gif")
 ```
 
-In this example, we can see Gilbert follow both coaching points. He quickly drops his hips when Blackwell drops his hips while staying on top. He does this by staying focused on Blackwell's hips while having the necessary quick hip movement. This drill specifically trains cornerbacks for defending vertical-breaking routes (verticals, curls, hitches, and comebacks) when in press-man coverage. We hope that this drill transfers over to gameday, in that Gilbert will stay on top of a receiver if the receiver were to run a vertical route and that Gilbert will quickly drop his hips and stay in synch with a receiver if the receiver were to drop his hips to slow down and turn around in order to run a curl, hitch, or comeback.
+In this example, we can see Gilbert follow both coaching points. He quickly drops his hips when Blackwell drops his hips while staying on top. He does this by staying focused on Blackwell’s hips while having the necessary quick hip movement. This drill specifically trains cornerbacks for defending vertical-breaking routes (verticals, curls, hitches, and comebacks) when in press-man coverage. We hope that this drill transfers over to gameday, in that Gilbert will stay on top of a receiver if the receiver were to run a vertical route and that Gilbert will quickly drop his hips and stay in synch with a receiver if the receiver were to drop his hips to slow down and turn around in order to run a curl, hitch, or comeback.
 
-This transfer to gameday is what we will examine in this study. We will look at all times a defender plays press-man coverage this season and is defending a vertical-breaking route, as this is the scope of the drill. We will look at the hip reaction time for defenders defending curls, hitches, and comebacks and the downfield distance (which would be positive) from the defenders to the receiver when defending verticals. We can use this to grade the combination of a cornerback's hips and his ability to react to the receivers' hips.
+This transfer to gameday is what we will examine in this study. We will look at times a defender plays press-man coverage and is defending a vertical-breaking route. In this, we will look at both the hip reaction time for defenders defending curls/hitches/comebacks and the downfield distance between the defender and the receiver when defending verticals. We can then assess a cornerback’s hips and his ability to react to the receivers’ hips.
 
 # Data
 
-In this study, I use two data sources. The first source is the data provided by the NFL Big Data Bowl 2021, which provides  player-tracking data for skill position players in every play in every regular season game of the 2018 NFL season. This player-tracking data is given from Zebra's RFID chips and it provides coordinates, speeds, accelerations, orientations, and movement directions for every player at every 0.1 seconds of every play. We were provided with 19,239 plays.
+In this study, I use two data sources. The first source is the data provided by the NFL Big Data Bowl 2021. This player-tracking data is given from Zebra’s RFID chips for every play in every 2018 NFL regular season games, and it provides coordinates and speeds for each player every 0.1 seconds.
 
-The other source is ProFootballFocus. PFF is a database that all NFL teams subscribe to. I will be using this play-by-play data for every play in every regular season game of the 2018 NFL season, which has information such as alignment, coverage type, pass depth, pass result, and grades for each player for each play. PFF data is manually tracked using gamefilm, but it should be marked as reliable, as every row is completed by multiple people and checked against each other. I will be using this data for identifying coverages, press players, and routes. It should be noted that coverage and press players could both be identified using tracking data alone (as I'm sure many other 2021 Big Data Bowl Competitors did!) and that routes were provided to us in the player-tracking data. However, because I'm looking at a niche situation, I did not want to leave room for modeling error when filtering, and so I decided to use PFF data.
+The other source is ProFootballFocus. I will be using this play-by-play data for identifying coverages, press players, and routes. It should be noted that these categories could both be identified using tracking data alone (as I’m sure many other 2021 Big Data Bowl Competitors did!). However, because I’m looking at a niche situation, I did not want to leave room for modeling error when filtering, and so I decided to use PFF data.
 
-After pulling the PFF data, I filtered down to just passing plays where the defense was playing man coverage and had someone pressing, which gave us 5,980 plays. I then merged each of the plays from the Big Data Bowl data to the PFF plays identified as press-man based on GSIS play ID, possession team, and week number. After removing 472 plays that were missing game IDs, we were left with 5,508 plays.
-
-The next task was to clean the data. First I created a new row for every press player and their respective receiver/route that they were covering. This gave us 11,450 rows. Knowing that we only want to examine vertical-breaking routes, I then filtered for just the four routes in question which left us with 4,502 routes to examine, with 2,824 of those being verticals and 1,678 of those being comebacks, curls, and hitches. We were now ready to start measuring hip reactions. 
+After merging these two sources, creating a row for every press player and their respective receiver/route that they were covering, and filtering for just the four routes in question, we are left with 4,502 routes to examine, with 2,824 of those being verticals and 1,678 of those being comebacks, curls, and hitches.
 
 # Methods
 
-For every route, I examined the receiver's movement and the defender's movement after grouping them by the route the receiver runs. If the receiver runs a comeback, curl, or hitch, it means the receiver's hip had to drop in order to stop and turn, so we will be focused on the coaching point, "when his hips drop, my hips drop," by measuring hip reaction time. If the receiver runs a vertical, it means the receiver is just going deep and so we will be focused on the coaching point, "stay on top," by measuring the downfield distance between the defender and the receiver. If the receiver is targeted by the quarterback, we will also measure the separation between the defender and the receiver when the ball arrives.
+For every route, I examined the receiver’s movement and the defender’s movement after grouping them by the route the receiver runs. If the receiver runs a comeback, curl, or hitch, it means the receiver’s hip had to drop in order to stop and turn, so we will be focused on the coaching point, “when his hips drop, my hips drop,” by measuring hip reaction time. If the receiver runs a vertical, it means the receiver is just going deep and so we will be focused on the coaching point, “stay on top,” by measuring the downfield distance between the defender and the receiver. If the receiver is targeted by the quarterback, we will also measure the separation between the defender and the receiver when the ball arrives.
 
-It should be noted that some plays become busted plays (could be due to fumbles, spikes, etc.), and so if this busted play event occurs before our measurement can take place, we will not measure hip reaction or downfield distance, as the data would be unreliable.
+It should be noted that some plays become busted plays (could be due to fumbles, spikes, etc.), and so if this busted play event occurs before our measurement, we will not measure.
 
-## Hip Reaction
+## Hip Reaction Time
 
-To measure hip reaction, we need to pinpoint when the receiver first drops his hips. Since the receiver is dropping his hips to decelerate, we can use the moment where the receiver first decelerates to indicate when the receiver's hips start dropping. Similarly, we can see the moment the defender responds to this hip dropping by seeing when the defender first decelerates after the receiver decelerates.
+To measure hip reaction time, we need to pinpoint when the receiver first drops his hips. Since the receiver is dropping his hips to decelerate, we can use the moment where the receiver first decelerates to indicate when the receiver’s hips start dropping. Similarly, we can see the moment the defender responds to this hip dropping by seeing when the defender first decelerates after the receiver decelerates.
 
-However, there are a couple of caveats. The first is that we can not use the acceleration column from the player-tracking data, as the acceleration column never has a negative number, so it does not give a reliable depiction of deceleration. To fix this, we look for the first point where a player's speed is less than the player's speed in the frame before it. Another caveat is, especially in press coverage, there may be some hand-fighting at the line of scrimmage, so speed may go up and down at the start. To fix this, we don't start tracking deceleration until the receiver is three yards past the line of scrimmage, as any hitch that is less than three yards down the field is more likely to be classified as a now route.
+However, there are a couple of caveats. The first is that we do not use the acceleration column from the player-tracking data, as the acceleration column never has a negative number. To fix this, we look for the first point where a player’s speed is less than the player’s speed in the frame before it. Another caveat is, especially in press coverage, there may be some hand-fighting at the line of scrimmage, so speed may go up and down at the start. To fix this, we don’t start tracking deceleration until the receiver is three yards past the line of scrimmage, as any hitch that is less than three yards down the field is more likely to be classified as a now route.
 
-The process can be simplified by the plot below, where we see the first drops of speed in both the receiver (D.J. Moore) and the cornerback (Eli Apple) mark the edges of the measured hip reaction time.
+The process can be simplified by the plot below, where we see the first drops of speed in both the receiver and the cornerback mark the edges of the measured hip reaction time.
 
-```{r hip-plot, fig.align='center', fig.cap="Plot of speed for both D.J. Moore and Eli Apple in GSIS play 98 of the 2018 Week 15 game between the Panthers and Saints, with Eli Apple's hip reaction time indicated."}
+```{r hip-plot, fig.align='center'}
 include_graphics('figures/hip_reaction_plot.png')
 ```
 
-This process works well and we can see below two examples of hip reactions against curls, with a poor example of hip reaction on the left and a good example of hip reaction on the right.
-```{r hip-gif, fig.align='center', fig.cap="Plot of hip reactions by Eli Apple (green) and Tramaine Brock (blue) against E.J. Moore (purple) and Christian Kirk (red), respectively."}
+We can see below two examples of hip reactions against curls, with a poor example of hip reaction on the left and a good example on the right.
+
+```{r hip-gif, fig.align='center'}
 include_graphics('figures/good_bad_hip_reactions.gif')
 ```
 
-The left example is the same play we already examined, in which we can see the harmful effects of a long hip reaction time. Eli Apple takes a while to react to D.J. Moore's hip dropping, which creates a lot of separation at the top of the route, preventing Eli Apple from making a play on the ball. The right example comes from GSIS play 1324 from the Week 7 game between the Broncos and Cardinals, in which Tramaine Brock remains glued to Christian Kirk and is able to drop his hips just after Kirk's hips drop, allowing Brock to get a pass breakup. The fraction of a second difference in reactions makes all of the difference in the play.
+The left example is the play from the speed plot, in which we can see the harmful effects of a long hip reaction time. Eli Apple takes a while to react to D.J. Moore’s hip dropping, which creates a lot of separation at the top of the route, preventing Apple from making a play on the ball. In the right example, Tramaine Brock remains glued to Christian Kirk and is able to drop his hips just after Kirk’s hips drop, allowing Brock to get a pass breakup. The fraction of a second difference in reactions makes all of the difference in the play.
 
 ## Downfield Distance
 
-To measure downfield distance, we need to pinpoint when the defender notices that the receiver is truly running a vertical. Once the defender realizes his man is running a vertical, his next goal is to close distance and get in phase with the receiver. Because this next goal is out of the scope of the Hip Reaction Drill, we want to see if at this point the defender does "stay on top" or if he is trailing the receiver.
+To measure downfield distance, we need to pinpoint when the defender identifies the route as a vertical. Once the defender realizes his man is running a vertical, his next goal is to close distance and get in phase with the receiver. Because this next goal is out of the scope of the Hip Reaction Drill, we want to see if at this point the defender does “stay on top” or if he is trailing the receiver.
 
-My way of detecting this moment was that the play will fall under one of two categories. The first is that the quarterback can not throw any other route after that point. This could be because the quarterback has just thrown the ball or because the quarterback was sacked. Any of these would indicate a point where we should look for whether the defender is on top of the receiver, as after this, the defender's goal would change to playing the ball in whatever way applies to the situation. The other category is that the receiver is more than 17 yards downfield. The 17-yard specification stems from my discussion with other secondary coaches, who suggest that once the receiver passes 17 yards downfield, the defender will know that the receiver won't be running any other type of route, so he will then change his goal to closing distance. Because of this, downfield distance will be measured at whichever of the two categories of plays occurs first.
+My way of detecting this moment was that the play will fall under one of two categories. The first is that the quarterback can not throw any other route after that point (pass was thrown, sack, etc.). Any of these would indicate a point where we should look for whether the defender is on top of the receiver, as after this, the defender’s goal would change to playing the ball in whatever way applies to the situation. The other category is that the receiver is more than 17 yards downfield. The 17-yard specification stems from my discussion with secondary coaches, who suggest that once the receiver passes 17 yards downfield, the defender will know that the receiver won’t be running any other type of route, so he will then change his goal to closing distance. Because of this, downfield distance will be measured at whichever of the two categories occurs first.
 
-It should be clarified what downfield distance is. Downfield distance is the distance that is parallel to the sideline between the receiver and the defender. This is not the same as separation, which is the hypotenuse between the receiver and the defender. I chose downfield distance instead of separation, as the horizontal distance (parallel to the goal line) between the receiver and the defender is outside the scope of the drill.
+It should be clarified what downfield distance is. Downfield distance is the distance that is parallel to the sideline between the receiver and the defender. This is not the same as separation, which is the hypotenuse between the receiver and the defender. I chose downfield distance, as the horizontal distance between the receiver and the defender is outside the scope of the drill.
 
 We can see below two examples of downfield distance against verticals, with a poor example on the left and a good example of staying on top on the right.
-```{r vert-gif, fig.align='center', fig.cap="Plot of hip reactions by Jaire Alexander (green) and Chandon Sullivan (blue) against Kelvin Benjamin (purple) and Russell Shepard (red), respectively."}
+
+```{r vert-gif, fig.align='center'}
 include_graphics('figures/good_bad_vert_reactions.gif')
 ```
 
-The left example is from GSIS play 1735 from the Week 4 game between the Bills and Packers, in which Jaire Alexander loses depth on Kelvin Benjamin less than 10 yards past the line of scrimmage, so when the ball is thrown when Benjamin is 16.42 yards downfield, Alexander has a downfield distance of -3.04, allowing Benjamin to gain 34 yards. The right example is from GSIS play 1076 from the Week 12 game between the Giants and Eagles, in which Chandon Sullivan stays on top of Russell Shepard forcing Eli Manning to throw a tough, contested back shoulder pass to the sideline 30 yards downfield. This ball is thrown when Shepard is 16.63 yards downfield, in which Sullivan has a downfield distance of +0.11 yards.
+In the left example, Jaire Alexander loses depth on Kelvin Benjamin less than 10 yards downfield, so when the ball is thrown, Benjamin is 16.42 yards downfield and Alexander has a downfield distance of -3.04, allowing Benjamin to gain 34 yards. In the right example, Chandon Sullivan stays on top of Russell Shepard with a downfield distance of +0.11 yards, forcing Eli Manning to throw a tough, contested back shoulder pass to the sideline 30 yards downfield.
 
 # Results
 
+Now that we’ve quantified hip reactions, we need to see if these statistics actually matter. To do so, let’s plot our two statistics versus separation at the catch point.
+
+```{r separation-plots, fig.align='center'}
+include_graphics('figures/separation_plots.png')
+```
+
+In these plots, we see what we would expect. In the plot on the left, separation seems to increase as hip reaction time increases, which makes sense, as the slow reaction should create this separation. In the plot on the right, we see large separation values when downfield distance is to an extreme on either side, which stems from the receiver creating separation early in the route. However, when downfield distance is more towards zero (or when the defender is closer to the receiver when identifying the route as a vertical), separation appears to decrease as downfield distance increases, which provides evidence to why defenders should “stay on top.”
+
+Now, we can rank defenders by both categories. We see the rankings for hip reaction time below.
+
+```{r hip_ranks, fig.align='center'}
+include_graphics('figures/hip_reaction_rankings.png')
+```
+
+These rankings make sense physically, as the average reaction time is 0.15 seconds to touch stimulus and 0.18 - 0.2 seconds to visual stimulus (“Reaction Times to Sound, Light and Touch.”). These defenders are fully focused on the opponent’s hip and may even have a hand on their receiver, so we should expect these times.
+
+We see the rankings for downfield distance below.
+
+```{r dd-ranks, fig.align='center'}
+include_graphics('figures/vert_reaction_rankings.png')
+```
+
+This ranking should be taken with a grain of salt, as we know that a downfield distance too large can cause large separation, so Coty Sensabaugh may not be the best at staying on top despite staying the most on top.
+
+We see players like Marlon Humphrey, J.C. Jackson, and Tre’Davious White in both rankings, which is a testament to their hips and ability to react to the receivers’ hips.
+
 # Discussion
+
+In this study, we quantified the results of the cornerback drill. It should be noted that this may not be the best way of assessing cornerback play throughout all techniques, as this may struggle with cornerbacks that play motor technique. It would also be interesting to explore how a cornerback’s hip reaction affects their ability to cover stutter-and-go or whip routes.
+
+It should also be noted that the data can at times be unreliable. While the data was mostly clean, there were plays such as GSIS play 2852 of the Week 17 game between the Jets and Patriots, where Robby Anderson only has two frames of data.
+
+However, this is a relevant study for NFL teams, as not only does this provide numbers to assess a defender’s traits and to justify a specific practice drill, it opens the door to trying to quantify other drills’ translation to the game.
+
+# References
+
+“Reaction Times to Sound, Light and Touch.” BioNumbers, Harvard University, bionumbers.hms.harvard.edu/bionumber.aspx. 
 
 # Code
 
-
-
-
-PlayId 1489 (pass to Bennie Fowler is marked as a curl/hitch)
-
-PlayId 2852 in 2018123006 (Robby anderson teleports)
+All code can be found here: https://github.com/charliegelman/BigDataBowl2021
