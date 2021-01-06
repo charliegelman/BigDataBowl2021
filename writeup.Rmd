@@ -7,166 +7,58 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 ```
 
 ```{r libraries}
+library(cowplot)
 library(dplyr)
+library(gganimate)
 library(ggplot2)
+library(knitr)
 ```
 
 # Introduction
 
-Two of the most valuable traits of a cornerback are his hips and his ability to react to the receivers' hips. At Duke Football, we play a lot of press-man coverage, and this traits become extremely important. 
+Two of the most valuable traits of a cornerback are his hips and his ability to react to the receivers' hips. At Duke Football, we play a lot of press-man coverage, and so these traits become extremely important when you have to play in a receiver's face and quickly adjust to what routes they run. To train our cornerbacks (or "Cheetahs" as we call them), Coach Chris Hampton installed the Hip Reaction Drill.
+
+In the Hip Reaction Drill, two players run next to each, with one acting as the wide receiver and the other being a cornerback. The wide receiver will run straight forward and at random times, drop his hips to slow down. There are two specific coaching points for the cornerback. The first coaching point is "when his hips drop, my hips drop." This is to say that when the receiver starts to slow down, his hips will drop, and so the cornerback should do the same in order to slow down as soon as possible. The other coaching point is "stay on top." This is to say that cornerbacks should be more upfield than the wide receiver, as we do not want our cornerbacks to get beat deep, as that's how explosive plays happen. An example of this drill can be seen below.
 
 
-
-```{r}
-final_data <- read.csv("data/final_data_imputed.csv")
+```{r drill-trape, fig.align='center', fig.cap="An example of the Hip Reaction Drill, with #28 Mark Gilbert (green) acting as a cornerback and #31 Josh Blackwell (blue) acting as a wide receiver."}
+include_graphics("figures/hip_reaction_drill.gif")
 ```
 
+In this example, we can see Gilbert follow both coaching points. He quickly drops his hips when Blackwell drops his hips while staying on top. He does this by staying focused on Blackwell's hips while having the necessary quick hip movement. This drill specifically trains cornerbacks for defending vertical-breaking routes (verticals, curls, hitches, and comebacks) when in press-man coverage. We hope that this drill transfers over to gameday, in that Gilbert will stay on top of a receiver if the receiver were to run a vertical route and that Gilbert will quickly drop his hips and stay in synch with a receiver if the receiver were to drop his hips to slow down and turn around in order to run a curl, hitch, or comeback.
 
-```{r}
-summed_data <- final_data %>%
-  group_by(defender_name) %>%
-  summarise(count = n(), avg_downfield_distance = mean(downfield_distance, na.rm = TRUE), avg_hip_reaction_time = mean(hip_reaction_time, na.rm = TRUE), num_verts = sum(route_name == "Go")) %>%
-  mutate(num_break_routes = count - num_verts)
-```
+This transfer to gameday is what we will examine in this study. We will look at all times a cornerback plays press-man coverage this season and is defending a vertical-breaking route, as this is the scope of the drill. We will look at the hip reaction time for corners defending curls, hitches, and comebacks and the downfield distance (which would be positive) from the corner to the receiver when defending verticals. We can use this to grade the combination of a cornerback's hips and his ability to react to the receivers' hips.
 
-```{r}
-summed_data %>%
-  filter(num_break_routes >= 15) %>%
-  arrange(avg_hip_reaction_time) %>%
-  head(15) %>%
-  ggplot(aes(y = reorder(defender_name, -avg_hip_reaction_time), x = avg_hip_reaction_time))+
-  geom_col()
+# Data
 
-summed_data %>%
-  filter(num_verts >= 15) %>%
-  arrange(desc(avg_downfield_distance)) %>%
-  head(15) %>%
-  ggplot(aes(y = reorder(defender_name, avg_downfield_distance), x = avg_downfield_distance))+
-  geom_col()
-```
+In this study, I use two data sources. The first source is the data provided by the NFL Big Data Bowl 2021, which provides  player-tracking data for skill position players in every play in every regular season game of the 2018 NFL season. This player-tracking data is given from Zebra's RFID chips and it provides coordinates, speeds, accelerations, orientations, and movement directions for every player at every 0.1 seconds of every play. We were provided with 19,239 plays.
 
-```{r}
-final_data %>%
-  filter(!is.na(hip_reaction_time)) %>%
-  filter(!is.na(separation)) %>%
-  ggplot(aes(x = hip_reaction_time, y = separation))+
-  geom_point()+
-  geom_smooth(method = "lm")+
-  xlim(0,1)+
-  ylim(0,5)
-```
+The other source is ProFootballFocus. PFF is a database that all NFL teams subscribe to. I will be using this play-by-play data for every play in every regular season game of the 2018 NFL season, which has information such as alignment, coverage type, pass depth, pass result, and grades for each player for each play. PFF data is manually tracked using gamefilm, but it should be marked as reliable, as every row is completed by multiple people and checked against each other. I will be using this data for identifying coverages, press players, and routes. It should be noted that coverage and press players could both be identified using tracking data alone (as I'm sure many other 2021 Big Data Bowl Competitors did!) and that routes were provided to us in the player-tracking data. However, because I'm looking at a niche situation, I did not want to leave room for modeling error when filtering, and so I decided to use PFF data.
 
-```{r}
-# good_hip_reac <- read.csv('data/week13.csv') %>%
-#   filter(gameId == 2018120206) %>%
-#   filter(playId == 3362) %>%
-#   filter((displayName == "Kenny Stills") | (displayName == "Rafael Bush"))  
+After pulling the PFF data, I filtered down to just passing plays where the defense was playing man coverage and had someone pressing, which gave us 5,980 plays. I then merged each of the plays from the Big Data Bowl data to the PFF plays identified as press-man based on GSIS play ID, possession team, and week number. After removing 472 plays that were missing game IDs, we were left with 5,508 plays.
 
-# good_hip_reac <- read.csv('data/week14.csv') %>%
-#   filter(gameId == 	2018120912) %>%
-#   filter(playId == 	3594) %>%
-#   filter((displayName == "Alshon Jeffery") | (displayName == "Chidobe Awuzie"))  
-hip_reacs <- final_data %>%
-    filter(!is.na(hip_reaction_time)) %>%
-    filter(route_name == "Hitch/Curl") %>%
-    filter(route_depth > 5) %>%
-    filter(route_depth < 6) %>%
-    filter(typeDropback == "TRADITIONAL") %>%
-    filter(targeted == 1) %>%
-    arrange(hip_reaction_time)
+The next task was to clean the data. First I created a new row for every press player and their respective receiver/route that they were covering. This gave us 11,450 rows. Knowing that we only want to examine vertical-breaking routes, I then filtered for just the four routes in question which left us with 4,502 routes to examine, with 2,824 of those being verticals and 1,678 of those being comebacks, curls, and hitches. We were now ready to start measuring hip reactions. 
+
+# Methods
 
 
-get_hip_reac <- function(row){
-  read.csv(sprintf('data/week%d.csv', row[['week']])) %>%
-    filter(gameId == 	row[['gameId']]) %>%
-    filter(playId == 	row[['playId']]) %>%
-    filter((displayName == row[['receiver_name']]) | (displayName == row[['defender_name']])) 
-}
 
-good_hip_reac <- get_hip_reac(hip_reacs[4,])
+## Hip Reaction
 
-bad_hip_reac <- get_hip_reac(hip_reacs[33,])
+## Downfield Distance
 
-write.csv(good_hip_reac, 'data/good_hip_react_dots.csv')
-write.csv(bad_hip_reac, 'data/bad_hip_react_dots.csv')
-```
+# Results
 
-```{r}
-ggplot(bad_hip_reac, aes(y = 113 - x, x = y, label = jerseyNumber))+
-    annotate("text", x = 21, 
-           y = 52:68, label = "____", hjust = 1, vjust = -0.3) + 
-    geom_hline(yintercept = seq(51,66,5), color = "black")+
-    geom_hline(yintercept = 66, color = "blue", size = 2)+
-    geom_hline(yintercept = 56, color = "yellow", size = 2)+
-  geom_point(aes(shape = position, fill = displayName), size = 5, alpha = 0.7, colour = "black") +
-    geom_point(data = good_hip_reac, aes(y = x, x = y - 20, shape = position, fill = displayName), colour="black", size = 5, alpha = 0.7)+
-    scale_shape_manual(values=c("CB" = 21, "WR" = 22))+
-    scale_fill_manual(values = c("red", "purple", "green", "blue"))+
-    guides(fill = guide_legend(override.aes=list(shape=21)))+
-    geom_text(colour = "white", size = 3.5)+
-    geom_text(data = good_hip_reac, aes(y = x, x = y - 20), colour = "white", size = 3.5)+
-    annotate("text", x = 15, y = 67.75, label = "Hip Reaction: 0.4s")+
-    annotate("text", x = 27, y = 67.75, label = "Hip Reaction: 0.1s")+
-    coord_fixed() +  
-    theme_nothing()+
-    labs(fill = "Player", shape = "Position")+
-    theme(legend.position = "right")+
-    transition_states(frameId)
+# Discussion
 
-anim_save("figures/good_bad_hip_reactions.gif")
-```
+# Code
 
 
-```{r}
-vert_reacs <- final_data %>%
-    filter(!is.na(downfield_distance)) %>%
-    filter(route_depth > 16) %>%
-    filter(typeDropback == "TRADITIONAL") %>%
-    filter(targeted == 1) %>%
-    arrange(desc(downfield_distance))
 
-good_vert_reac <- get_hip_reac(vert_reacs[4,])
-
-bad_vert_reac <- get_hip_reac(vert_reacs[18,])
-write.csv(good_vert_reac, 'data/good_vert_react_dots.csv')
-write.csv(bad_vert_reac, 'data/bad_vert_react_dots.csv')
-```
-
-```{r}
-ggplot(bad_vert_reac, aes(y = x, x = y, label = jerseyNumber))+
-  geom_point(aes(shape = position, fill = displayName), size = 5, alpha = 0.7, colour = "black")+
-    scale_shape_manual(values=c("CB" = 21, "WR" = 22))
-
-ggplot(bad_vert_reac, aes(y = x, x = y, label = jerseyNumber))+
-    annotate("text", x = 23, 
-           y = 36:74, label = "____", hjust = 1, vjust = -0.3) + 
-    geom_hline(yintercept = seq(35,70,5), color = "black")+
-    geom_hline(yintercept = 70, color = "blue", size = 2)+
-    geom_hline(yintercept = 60, color = "yellow", size = 2)+
-    geom_hline(yintercept = 53, color = "red", size = 1, linetype = "dashed")+
-  geom_point(aes(shape = position, fill = displayName), size = 5, alpha = 0.7, colour = "black") +
-    geom_point(data = good_vert_reac, aes(y = 95 - x, x = y + 25, shape = position, fill = displayName), colour="black", size = 5, alpha = 0.7)+
-    scale_shape_manual(values=c("CB" = 21, "WR" = 22))+
-    scale_fill_manual(values = c("blue", "green", "purple",  "red"))+
-    guides(fill = guide_legend(override.aes=list(shape=21)))+
-    geom_text(colour = "white", size = 3.5)+
-    geom_text(data = good_vert_reac, aes(y = 95 - x, x = y + 25), colour = "white", size = 3.5)+
-    annotate("text", x = 12, y = 73.5, label = "Downfield Dist.: -3.04 yds")+
-    annotate("text", x = 34, y = 73.5, label = "Downfield Dist.: +0.11 yds")+
-    coord_fixed() +  
-    theme_nothing()+
-    labs(fill = "Player", shape = "Position")+
-    theme(legend.position = "right")+
-    xlim(5, 40)+
-    ylim(45,74)+
-    transition_states(frameId)
-
-anim_save("figures/good_bad_hip_reactions.gif")
-```
 
 PlayId 1489 (pass to Bennie Fowler is marked as a curl/hitch)
 
