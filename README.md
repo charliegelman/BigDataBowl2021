@@ -1,5 +1,5 @@
 # Big Data Bowl 2021: Hip Reaction Drill  
-## Measuring Reactions of Defenders in Press-Man against Vertical-Breaking Routes
+**Measuring Reactions of Defenders in Press-Man against Vertical-Breaking Routes**
 
 Charles Gelman
 
@@ -20,7 +20,7 @@ Then make sure to download the Big Data Bowl 2021 data by going to the [Kaggle c
 
 ## Data Pulling and Merging
 
-If you would like to recreate pulling data and merging, you will need a ProFootballFocus API key. If you do not have one, skip to data cleaning.
+If you would like to recreate pulling data and merging, you will need a ProFootballFocus API key. If you do not have one, skip to [data cleaning](https://github.com/charliegelman/BigDataBowl2021#data-cleaning).
 
 Run `get_pff_data.R` and enter your PFF API key when prompted to.
 
