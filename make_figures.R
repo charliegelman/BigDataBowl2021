@@ -1,9 +1,11 @@
+#### Packages ####
 library(cowplot)
 library(dplyr)
 library(gganimate)
 library(ggplot2)
 library(patchwork)
 
+#### Make data frames ####
 final_data <- read.csv("data/final_data_imputed.csv")
 
 summed_data <- final_data %>%
@@ -11,6 +13,7 @@ summed_data <- final_data %>%
   summarise(count = n(), avg_downfield_distance = mean(downfield_distance, na.rm = TRUE), avg_hip_reaction_time = mean(hip_reaction_time, na.rm = TRUE), num_verts = sum(route_name == "Go")) %>%
   mutate(num_break_routes = count - num_verts)
 
+#### Rank Defenders by Hip Reaction ####
 summed_data %>%
   filter(num_break_routes >= 15) %>%
   arrange(avg_hip_reaction_time) %>%
@@ -23,6 +26,7 @@ summed_data %>%
        subtitle = "2018 NFL Regular Season\nMinimum 15 snaps in press-man against a curl/hitch/comeback")
 ggsave("figures/hip_reaction_rankings.png", width = 8, height = 4)
 
+#### Rank Defenders by Downfield Distance ####
 summed_data %>%
   filter(num_verts >= 15) %>%
   arrange(desc(avg_downfield_distance)) %>%
@@ -35,6 +39,9 @@ summed_data %>%
        subtitle = "2018 NFL Regular Season\nMinimum 15 snaps in press-man against a vertical")
 ggsave("figures/vert_reaction_rankings.png", width = 8, height = 4)
 
+
+#### Hip Reaction Stats vs Separation Plot ####
+# Hip Reaction Time vs Separation
 hip_vs_sep_plot <- final_data %>%
   filter(!is.na(hip_reaction_time)) %>%
   filter(!is.na(separation)) %>%
@@ -46,6 +53,7 @@ hip_vs_sep_plot <- final_data %>%
   theme_cowplot()+
   labs(x = "Hip Reaction Time (sec)", y = "Separation (yards)", title = "Separation at the Catch Point vs. Hip Reaction Measurements")
 
+# Downfield Distance vs Separation
 vert_vs_sep_plot <- final_data %>%
   filter(!is.na(downfield_distance)) %>%
   filter(!is.na(separation)) %>%
@@ -60,7 +68,8 @@ vert_vs_sep_plot <- final_data %>%
 hip_vs_sep_plot + vert_vs_sep_plot
 ggsave("figures/separation_plots.png", width = 8, height = 4)
 
-
+#### Plot gif of Hip Reaction Time ####
+# Get hip reaction time plays that are around the same downfield depth
 hip_reacs <- final_data %>%
   filter(!is.na(hip_reaction_time)) %>%
   filter(route_name == "Hitch/Curl") %>%
@@ -70,7 +79,7 @@ hip_reacs <- final_data %>%
   filter(targeted == 1) %>%
   arrange(hip_reaction_time)
 
-
+# Function for getting tracking data for a given play
 get_hip_reac <- function(row){
   read.csv(sprintf('data/week%d.csv', row[['week']])) %>%
     filter(gameId == 	row[['gameId']]) %>%
@@ -78,13 +87,18 @@ get_hip_reac <- function(row){
     filter((displayName == row[['receiver_name']]) | (displayName == row[['defender_name']])) 
 }
 
+
+# Get the Christian Kirk vs Tramaine Brock play tracking data
 good_hip_reac <- get_hip_reac(hip_reacs[4,])
 
+# Get the DJ Moore vs Eli Apple play tracking data
 bad_hip_reac <- get_hip_reac(hip_reacs[33,])
 
+# Save the dataframes for posterity
 write.csv(good_hip_reac, 'data/good_hip_react_dots.csv')
 write.csv(bad_hip_reac, 'data/bad_hip_react_dots.csv')
 
+# Plot speed and reaction time plot of DJ Moore vs Eli Apple
 ggplot(bad_hip_reac, aes(x = frameId/10, y = s, color = displayName))+
   geom_point()+
   geom_line()+
@@ -103,6 +117,7 @@ ggplot(bad_hip_reac, aes(x = frameId/10, y = s, color = displayName))+
 ggsave("figures/hip_reaction_plot.png", width = 8, height = 4)
 
 
+# Plot animation of both plays side by side
 ggplot(bad_hip_reac, aes(y = 113 - x, x = y, label = jerseyNumber))+
   annotate("text", x = 21, 
            y = 52:68, label = "____", hjust = 1, vjust = -0.3) + 
@@ -126,7 +141,8 @@ ggplot(bad_hip_reac, aes(y = 113 - x, x = y, label = jerseyNumber))+
   transition_states(frameId)
 anim_save("figures/good_bad_hip_reactions.gif")
 
-
+#### Plot gif of Downfield Distance ####
+# Get downfield distance plays that are around the same downfield depth
 vert_reacs <- final_data %>%
   filter(!is.na(downfield_distance)) %>%
   filter(route_depth > 16) %>%
@@ -134,17 +150,17 @@ vert_reacs <- final_data %>%
   filter(targeted == 1) %>%
   arrange(desc(downfield_distance))
 
+# Get the Russell Shepard vs Chandon Sullivan play tracking data
 good_vert_reac <- get_hip_reac(vert_reacs[4,])
 
+# Get the Kelvin Benjamin vs Jaire Alexander play tracking data
 bad_vert_reac <- get_hip_reac(vert_reacs[18,])
+
+# Save the dataframes for posterity
 write.csv(good_vert_reac, 'data/good_vert_react_dots.csv')
 write.csv(bad_vert_reac, 'data/bad_vert_react_dots.csv')
 
-
-# ggplot(bad_vert_reac, aes(y = x, x = y, label = jerseyNumber))+
-#   geom_point(aes(shape = position, fill = displayName), size = 5, alpha = 0.7, colour = "black")+
-#   scale_shape_manual(values=c("CB" = 21, "WR" = 22))
-
+# Plot animation of both plays side by side
 ggplot(bad_vert_reac, aes(y = x, x = y, label = jerseyNumber))+
   annotate("text", x = 23, 
            y = 36:74, label = "____", hjust = 1, vjust = -0.3) + 
@@ -170,4 +186,5 @@ ggplot(bad_vert_reac, aes(y = x, x = y, label = jerseyNumber))+
   ylim(45,74)+
   transition_states(frameId)
 anim_save("figures/good_bad_vert_reactions.gif")
+#### end ####
 
